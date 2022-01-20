@@ -1,0 +1,8 @@
+torch
+torchvision
+repackage
+numpy
+pandas
+Pillow
+tensorboardX
+scipy
