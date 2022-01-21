@@ -168,12 +168,11 @@ def main_worker(gpu, ngpus_per_node, args):
     
 
     ### dataloaders
-    train_loader, val_loader, train_sampler = get_imagenet_dls(args.distributed, args.batch_size, args.workers)
-    cf_train_loader, cf_val_loader, cf_train_sampler = get_cf_imagenet_dls(args.cf_data, args.cf_ratio, len(train_loader), args.distributed, args.batch_size, args.workers)
-    dl_shape_bias = get_cue_conflict_dls(args.batch_size, args.workers)
+    train_loader, val_loader, train_sampler = get_imagenet_dls(args.distributed, args.batch_size, args.workers, args.tiny)
+    cf_train_loader, cf_val_loader, cf_train_sampler = get_cf_imagenet_dls(args.cf_data, args.cf_ratio, len(train_loader), args.distributed, args.batch_size, args.workers, args.tiny)
+    dl_shape_bias = get_cue_conflict_dls(args.batch_size, args.workers, args.tiny)
     dls_in9 = get_in9_dls(args.distributed, args.batch_size, args.workers, ['mixed_rand', 'mixed_same'])
 
-    
     # eval before training
     if not args.resume:
         metrics = validate(model, val_loader, cf_val_loader,
@@ -338,6 +337,9 @@ def validate(model, val_loader, cf_val_loader, dl_shape_bias, dls_in9, args):
     else:
         metrics = val_res
 
+    # This was missing from the code. Is the sum correct?
+    metrics['acc1/0_overall'] = metrics['acc1/1_real'] + metrics['acc1/2_shape'] \
+                                +  metrics['acc1/3_texture'] + metrics['acc1/4_bg']
     return metrics
 
 
@@ -527,7 +529,7 @@ class ProgressMeter(object):
 
 def adjust_learning_rate(optimizer, epoch, args):
     """Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""
-    lr = args.lr * (0.1 ** (epoch // 15))
+    lr = args.lr * (0.1 ** (epoch // 10))
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
 
@@ -572,7 +574,7 @@ if __name__ == '__main__':
     parser.add_argument('--wd', '--weight-decay', default=1e-4, type=float,
                         metavar='W', help='weight decay (default: 1e-4)',
                         dest='weight_decay')
-    parser.add_argument('-p', '--print-freq', default=10, type=int,
+    parser.add_argument('-p', '--print-freq', default=100, type=int,
                         metavar='N', help='print frequency (default: 10)')
     parser.add_argument('--resume', default='', type=str, metavar='PATH',
                         help='path to latest checkpoint (default: none)')
@@ -607,6 +609,8 @@ if __name__ == '__main__':
                         help='name of the experiment')
     parser.add_argument('--cf_ratio', default=1.0, type=float,
                         help='Ratio of CF/Real data')
+    parser.add_argument('--tiny', dest='tiny', action='store_true',
+                        help='use tiny imagenet dataset')
 
     args = parser.parse_args()
     print(args)
