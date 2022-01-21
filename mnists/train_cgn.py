@@ -52,6 +52,7 @@ def fit(cfg, cgn, discriminator, dataloader, opts, losses, device):
 
     pbar = tqdm(range(cfg.TRAIN.EPOCHS))
     for epoch in pbar:
+        losses_running = {'real': 0, 'fake': 0, 'adv': 0, 'binary': 0, 'perc': 0}
         for i, data in enumerate(dataloader):
 
             # Data and adversarial ground truths to device
@@ -99,6 +100,13 @@ def fit(cfg, cgn, discriminator, dataloader, opts, losses, device):
             losses_d['real'] = L_adv(validity_real, valid)
             losses_d['fake'] = L_adv(validity_fake, fake)
             loss_d = sum(losses_d.values()) / 2
+            
+            
+            losses_running['real'] += losses_d['real']
+            losses_running['fake'] += losses_d['fake']
+            losses_running['adv'] += losses_g['adv']
+            losses_running['binary'] += losses_g['binary']
+            losses_running['perc'] += losses_g['perc']
 
             # Backprop and step
             loss_d.backward()
@@ -117,6 +125,11 @@ def fit(cfg, cgn, discriminator, dataloader, opts, losses, device):
                 msg += ''.join([f"[{k}: {v:.3f}]" for k, v in losses_d.items()])
                 msg += ''.join([f"[{k}: {v:.3f}]" for k, v in losses_g.items()])
                 pbar.set_description(msg)
+
+        print('----')
+        print('+', end='')
+        print(''.join([f"[{k}: {v:.3f}]" for k, v in losses_running.items()]))
+        print('----')
 
 def main(cfg):
     # model init
@@ -150,27 +163,31 @@ def main(cfg):
     fit(cfg, cgn, discriminator, dataloader, opts, losses, device)
 
 def merge_args_and_cfg(args, cfg):
-    cfg.MODEL_NAME = args.model_name
-    cfg.LOG.SAVE_ITER = args.save_iter
-    cfg.TRAIN.EPOCHS = args.epochs
-    cfg.TRAIN.BATCH_SIZE = args.batch_size
+    if args.model_name:
+        cfg.MODEL_NAME
+    if args.save_iter:
+        cfg.LOG.SAVE_ITER = args.save_iter
+    if args.epochs:
+        cfg.TRAIN.EPOCHS = args.epochs
+    if args.batch_size:
+        cfg.TRAIN.BATCH_SIZE = args.batch_size
+
     return cfg
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--cfg', type=str, default='',
+    parser.add_argument('--cfg', type=str,
                         help="path to a cfg file")
-    parser.add_argument('--model_name', default='tmp',
+    parser.add_argument('--model_name',
                         help='Weights and samples will be saved under experiments/model_name')
-    parser.add_argument("--save_iter", type=int, default=1000,
+    parser.add_argument("--save_iter", type=int,
                         help="interval between image sampling")
-    parser.add_argument("--epochs", type=int, default=15,
+    parser.add_argument("--epochs", type=int,
                         help="number of epochs of training")
-    parser.add_argument("--batch_size", type=int, default=16,
+    parser.add_argument("--batch_size", type=int,
                         help="size of the batches")
     args = parser.parse_args()
 
-    # get cfg
     cfg = load_cfg(args.cfg) if args.cfg else get_cfg_defaults()
     # add additional arguments in the argparser and in the function below
     cfg = merge_args_and_cfg(args, cfg)
