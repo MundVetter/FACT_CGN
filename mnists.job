@@ -1,0 +1,22 @@
+#!/bin/bash
+
+#SBATCH --job-name=mnists_cgn
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=3
+#SBATCH --time=04:00:00
+#SBATCH --mem=16000M
+#SBATCH --partition=gpu_shared_course
+
+module load 2021
+module load PyTorch/1.10.0-foss-2021a-CUDA-11.3.1
+pip install --quiet tqdm==4.62.3 repackage==0.7.3 torchvision==0.11.2 yacs==0.1.8 matplotlib==3.5.1
+
+cd $HOME/counterfactual_generative_networks
+
+srun python -u mnists/train_cgn.py --cfg mnists/experiments/cgn_wildlife_MNIST/cfg.yaml
+echo "wildlife done\n"
+srun python -u mnists/train_cgn.py --cfg mnists/experiments/cgn_double_colored_MNIST/cfg.yaml
+echo "double colored done\n"
+srun python -u mnists/train_cgn.py --cfg mnists/experiments/cgn_colored_MNIST/cfg.yaml
+echo "colored done\n"
