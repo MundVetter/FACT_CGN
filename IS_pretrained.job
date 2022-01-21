@@ -1,0 +1,18 @@
+#!/bin/bash
+
+#SBATCH --job-name=inception_score
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=3
+#SBATCH --time=04:00:00
+#SBATCH --mem=16000M
+#SBATCH --partition=gpu_shared_course
+
+module load 2021
+module load PyTorch/1.10.0-foss-2021a-CUDA-11.3.1
+pip install --quiet torchvision==0.11.2 Pillow==8.1.2 scipy==1.7.1
+
+cd $HOME/FACT_CGN
+
+srun python -u imagenet/inception --path ../counterfactual_generative_networks/imagenet/data/2022_01_21_12_ inception_score_pretrained/ims --batch-size 64 --splits 10 --cuda
+
