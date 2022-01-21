@@ -341,3 +341,5 @@ def get_in9_dls(distributed, batch_size, workers, variations=['mixed_rand', 'mix
                                         batch_size=batch_size,
                                         workers=workers)
     return dls_in9
+
+class 
