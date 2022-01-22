@@ -223,6 +223,8 @@ def main(args):
                 # to save other outputs, simply add a line in the same format, e.g.:
                 # save_image(premask, join(ims_path, im_name + '_premask.jpg'))
                 save_image(x_gen, join(ims_path, im_name + '_x_gen.jpg'))
+                save_image(x_gt, join(ims_path, im_name + '_x_gt.jpg'))
+                save_image(mask, join(ims_path, im_name + '_mask.jpg'))
 
             # save labels
             df = pd.DataFrame(columns=[im_name] + ys)
