@@ -423,3 +423,25 @@ def get_in9_dls(distributed, batch_size, workers, variations=['mixed_rand', 'mix
                                         batch_size=batch_size,
                                         workers=workers)
     return dls_in9
+
+class ImageDataset(Dataset):
+    def __init__(self, path, kind, transform=None):
+        """ Dataset for images in a directory
+
+        Args:
+            path (string): path to folder containing images.
+            transform (callable, optional): Optional transform to be applied
+        """
+        self.path = path
+        self.img_paths = [path for path in os.listdir(path) if kind in path]
+        self.transform = transform
+
+    def __getitem__(self, index):
+        img_path = os.path.join(self.path, self.img_paths[index])
+        img = Image.open(img_path).convert('RGB')
+        if self.transform is not None:
+            img = self.transform(img)
+        return img
+
+    def __len__(self):
+        return len(self.img_paths)

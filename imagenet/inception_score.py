@@ -17,7 +17,8 @@ import torch.utils.data
 from torchvision.models.inception import inception_v3
 from torch.utils.data import Dataset
 import os
-from PIL import Image
+
+from imagenet.dataloader import ImageDataset
 
 import numpy as np
 from scipy.stats import entropy
@@ -83,39 +84,18 @@ def transform_img(img):
     # Transforms a Pil img into a numpy array scaled to [-1, 1] and moves the color channel to the last dimension
     return np.moveaxis(np.array(img), -1, 0) / 127.5 - 1
 
-class ImageDataset(Dataset):
-    def __init__(self, path, transform=None):
-        """ Dataset for images in a directory
-
-        Args:
-            path (string): path to folder containing images.
-            transform (callable, optional): Optional transform to be applied
-        """
-        self.path = path
-        self.img_paths = os.listdir(path)
-        self.transform = transform
-
-    def __getitem__(self, index):
-        img_path = os.path.join(self.path, self.img_paths[index])
-        img = Image.open(img_path).convert('RGB')
-        if self.transform is not None:
-            img = self.transform(img)
-        return img
-
-    def __len__(self):
-        return len(self.img_paths)
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Calculate inception score')
     parser.add_argument('--path', type=str, default='imagenet/data/2022_01_20_12_IS_trunc_1.0/ims', help='Path to the images')
-    parser.add_argument('--batch-size', type=int, default=32, help='Batch size')
+    parser.add_argument('--batch-size', type=int, default=4, help='Batch size')
     parser.add_argument('--splits', type=int, default=1, help='Number of splits')
     parser.add_argument('--resize', action='store_true', help='Resize images to 299x299 before scoring')
     parser.add_argument('--cuda', action='store_true', help='Use GPU')
+    parser.add_argument('--kind', type=str, default='x_gen', help='Kind of images to use. E.g CGN Biggan or mask')
     args = parser.parse_args()
 
     print("Loading images...")
-    imgs = ImageDataset(args.path, transform=transform_img)
+    imgs = ImageDataset(args.path, kind = args.kind, transform=transform_img)
     
     print('Computing inception score...')
     is_score = inception_score(imgs, cuda=args.cuda, batch_size=args.batch_size, resize=args.resize, splits=args.splits)
