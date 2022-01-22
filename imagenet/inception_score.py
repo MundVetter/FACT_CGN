@@ -114,6 +114,7 @@ if __name__ == '__main__':
     parser.add_argument('--cuda', action='store_true', help='Use GPU')
     args = parser.parse_args()
 
+    print("Loading images...")
     imgs = ImageDataset(args.path, transform=transform_img)
     
     print('Computing inception score...')
