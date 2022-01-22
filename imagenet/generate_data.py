@@ -170,7 +170,13 @@ def sample_classes(mode, classes=None, tiny=False):
 
     elif mode == 'fixed_classes':
         return [int(c) for c in classes]
-
+    
+    elif mode == 'random_same_class':
+        if tiny:
+            random = np.random.choice(TINY_CLASSES)
+        else:
+            random = np.random.randint(0, 1000)
+        return [random, random, random]
     else:
         assert ValueError("Unknown sample mode {mode}")
 
@@ -233,7 +239,7 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--mode', type=str, required=True,
-                        choices=['random', 'best_classes', 'fixed_classes'],
+                        choices=['random', 'best_classes', 'fixed_classes', 'random_same_class'],
                         help='Choose between random sampling, sampling from the best ' +
                         'classes or the classes passed to args.classes')
     parser.add_argument('--n_data', type=int, required=True,
