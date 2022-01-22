@@ -14,5 +14,5 @@ pip install --quiet torchvision==0.11.2 Pillow==8.1.2 scipy==1.7.1
 
 cd $HOME/FACT_CGN
 
-srun python -u imagenet/inception --path ../counterfactual_generative_networks/imagenet/data/2022_01_21_12_ inception_score_pretrained/ims --batch-size 64 --splits 10 --cuda
+srun python -u imagenet/inception_score.py --path ../Z:\counterfactual_generative_networks\imagenet\data\2022_01_21_22_inception_score_pretrained_trunc_1.0_/ims --batch-size 64 --splits 10 --cuda
 
