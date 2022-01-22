@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --job-name=mnists_cgn
+#SBATCH --job-name=generate_counter_factuals_pretrained
 #SBATCH --gres=gpu:1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=3
