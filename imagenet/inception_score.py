@@ -108,7 +108,7 @@ class ImageDataset(Dataset):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Calculate inception score')
     parser.add_argument('--path', type=str, default='imagenet/data/2022_01_20_12_IS_trunc_1.0/ims', help='Path to the images')
-    parser.add_argument('--batch-size', type=int, default=10, help='Batch size')
+    parser.add_argument('--batch-size', type=int, default=32, help='Batch size')
     parser.add_argument('--splits', type=int, default=1, help='Number of splits')
     parser.add_argument('--resize', action='store_true', help='Resize images to 299x299 before scoring')
     parser.add_argument('--cuda', action='store_true', help='Use GPU')
@@ -117,5 +117,7 @@ if __name__ == '__main__':
     imgs = ImageDataset(args.path, transform=transform_img)
     
     print('Computing inception score...')
-    print('Mean: {:.3f}'.format(inception_score(imgs, cuda=args.cuda, batch_size=args.batch_size, resize=args.resize, splits=args.splits)[0]))
+    is_score = inception_score(imgs, cuda=args.cuda, batch_size=args.batch_size, resize=args.resize, splits=args.splits)
+    print('Mean: {:.3f}'.format(is_score[0]))
+    print('Std: {:.3f}'.format(is_score[1]))
 
