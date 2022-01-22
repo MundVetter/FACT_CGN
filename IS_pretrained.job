@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --job-name=inception_score
+#SBATCH ---job-name=inception_score
 #SBATCH --gres=gpu:1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=3
