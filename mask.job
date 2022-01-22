@@ -1,0 +1,17 @@
+#!/bin/bash
+
+#SBATCH --job-name=mask_mean
+#SBATCH --gres=gpu:1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=3
+#SBATCH --time=04:00:00
+#SBATCH --mem=16000M
+#SBATCH --partition=gpu_shared_course
+
+module load 2021
+module load PyTorch/1.10.0-foss-2021a-CUDA-11.3.1
+pip install --quiet torchvision==0.11.2 Pillow==8.1.2 
+
+cd $HOME/FACT_CGN
+
+srun python -u -m imagenet.calculate_mask --path ../FACT_CGN/imagenet/data/2022_01_21_22_inception_score_pretrained_trunc_1.0_/ims

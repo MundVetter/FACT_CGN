@@ -1,10 +1,10 @@
 #!/bin/bash
 
-#SBATCH --job-name=mnists_cgn
+#SBATCH --job-name=generate_counter_factuals_pretrained
 #SBATCH --gres=gpu:1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=3
-#SBATCH --time=04:00:00
+#SBATCH --time=05:00:00
 #SBATCH --mem=16000M
 #SBATCH --partition=gpu_shared_course
 
@@ -14,4 +14,4 @@ pip install --quiet tqdm==4.62.3 repackage==0.7.3 torchvision==0.11.2 yacs==0.1.
 
 cd $HOME/FACT_CGN
 
-srun python -u imagenet/generate_data.py --mode random --weights_path imagenet/weights/cgn.pth --n_data 50000 --run_name inception_score_pretrained
+srun python -u imagenet/generate_data.py --mode random_same_class --weights_path imagenet/weights/cgn.pth --n_data 50000 --run_name inception_score_pretrained

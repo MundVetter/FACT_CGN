@@ -170,7 +170,13 @@ def sample_classes(mode, classes=None, tiny=False):
 
     elif mode == 'fixed_classes':
         return [int(c) for c in classes]
-
+    
+    elif mode == 'random_same_class':
+        if tiny:
+            random = np.random.choice(TINY_CLASSES)
+        else:
+            random = np.random.randint(0, 1000)
+        return [random, random, random]
     else:
         assert ValueError("Unknown sample mode {mode}")
 
@@ -223,6 +229,8 @@ def main(args):
                 # to save other outputs, simply add a line in the same format, e.g.:
                 # save_image(premask, join(ims_path, im_name + '_premask.jpg'))
                 save_image(x_gen, join(ims_path, im_name + '_x_gen.jpg'))
+                save_image(x_gt, join(ims_path, im_name + '_x_gt.jpg'))
+                save_image(mask, join(ims_path, im_name + '_mask.jpg'))
 
             # save labels
             df = pd.DataFrame(columns=[im_name] + ys)
@@ -231,7 +239,7 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--mode', type=str, required=True,
-                        choices=['random', 'best_classes', 'fixed_classes'],
+                        choices=['random', 'best_classes', 'fixed_classes', 'random_same_class'],
                         help='Choose between random sampling, sampling from the best ' +
                         'classes or the classes passed to args.classes')
     parser.add_argument('--n_data', type=int, required=True,
