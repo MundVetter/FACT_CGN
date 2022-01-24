@@ -19,7 +19,7 @@ from torchvision.models.inception import inception_v3
 import os
 
 from imagenet.dataloader import ImageDataset
-from imagenet.is_tf import get_inception_score
+from imagenet.is_tf import get_inception_score, get_inception_score_bugged
 
 import numpy as np
 from scipy.stats import entropy
@@ -94,17 +94,25 @@ if __name__ == '__main__':
     parser.add_argument('--cuda', action='store_true', help='Use GPU')
     parser.add_argument('--kind', type=str, default='x_gen', help='Kind of images to use. E.g CGN Biggan or mask')
     parser.add_argument('--tensorflow', action='store_true', help='Use tensorflow')
+    parser.add_argument('--bugged', action='store_true', help='Use buggy version of tensorflow')
     args = parser.parse_args()
 
     if args.tensorflow:
         imgs = ImageDataset(args.path, args.kind, transform = np.array)
         n = len(imgs)
         flattened_size = 256 * 256 * 3
-        all_samples = np.zeros([int(np.ceil(float(n)/args.batch_size)*args.batch_size), flattened_size],dtype=np.uint8)
-        dataloader = torch.utils.data.DataLoader(imgs, batch_size=args.batch_size, drop_last=True)
-        for i, batch in enumerate(dataloader):# inception score for num_batches of real data
-            all_samples[i*args.batch_size:(i+1)*args.batch_size]= batch.numpy().reshape(args.batch_size, flattened_size).astype(np.uint8)
-        is_score = get_inception_score(all_samples[:n].reshape([-1,256,256,3]).transpose([0,3,1,2]), args.splits)
+        if args.bugged:
+            dataloader = torch.utils.data.DataLoader(imgs, batch_size=1)
+            imgs = []
+            for i, batch in enumerate(dataloader, 0):
+                imgs.append(batch.squeeze().numpy())
+            is_score = get_inception_score_bugged(imgs, splits=args.splits)
+        else:
+            all_samples = np.zeros([int(np.ceil(float(n)/args.batch_size)*args.batch_size), flattened_size],dtype=np.uint8)
+            dataloader = torch.utils.data.DataLoader(imgs, batch_size=args.batch_size, drop_last=True)
+            for i, batch in enumerate(dataloader):# inception score for num_batches of real data
+                all_samples[i*args.batch_size:(i+1)*args.batch_size]= batch.numpy().reshape(args.batch_size, flattened_size).astype(np.uint8)
+            is_score = get_inception_score(all_samples[:n].reshape([-1,256,256,3]).transpose([0,3,1,2]), args.splits)
     else :
         print("Loading images...")
         imgs = ImageDataset(args.path, kind = args.kind, transform=transform_img)
