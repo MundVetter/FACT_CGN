@@ -24,8 +24,8 @@ def eval_bg_gap(loader, model, map_to_in9):
             if isinstance(model, InvariantEnsemble):
                 for k in correct.keys():
                     correct[k] += count_correct(output[k + '_preds'], target, map_to_in9)
-                else:
-                    correct['avg'] += count_correct(output, target, map_to_in9)
+            else:
+                correct['avg'] += count_correct(output, target, map_to_in9)
 
     total_len = loader.batch_size * len(loader)
     acc1 = {k: torch.tensor(100 * v / total_len) for k, v in correct.items()}
