@@ -105,8 +105,10 @@ if __name__ == '__main__':
             dataloader = torch.utils.data.DataLoader(imgs, batch_size=1)
             imgs = []
             for i, batch in enumerate(dataloader, 0):
+                if i == 5000:
+                    break
                 imgs.append(batch.squeeze().numpy())
-            is_score = get_inception_score_bugged(imgs, splits=args.splits)
+            is_score = get_inception_score_bugged(imgs, splits=1)
         else:
             all_samples = np.zeros([int(np.ceil(float(n)/args.batch_size)*args.batch_size), flattened_size],dtype=np.uint8)
             dataloader = torch.utils.data.DataLoader(imgs, batch_size=args.batch_size, drop_last=True)
