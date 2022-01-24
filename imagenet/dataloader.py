@@ -415,10 +415,10 @@ def get_cf_imagenet_dls(path, cf_ratio, len_dl_train, distributed, batch_size, w
 def get_cue_conflict_dls(batch_size, workers, tiny=False):
     return DataLoader(CueConflict(tiny), batch_size=batch_size, pin_memory=True, num_workers=workers)
 
-def get_in9_dls(distributed, batch_size, workers, variations=['mixed_rand', 'mixed_same']):
+def get_in9_dls(distributed, batch_size, workers, variations=['mixed_rand', 'mixed_same'], tiny=False):
     dls_in9 = {}
     for v in variations:
-        in9_ds = Imagenet9(join('.', 'imagenet', 'data', 'in9', v))
+        in9_ds = Imagenet9(join('.', 'imagenet', 'data', 'in9', v), tiny=tiny)
         dls_in9[v] = in9_ds.make_loader(distributed=distributed,
                                         batch_size=batch_size,
                                         workers=workers)
