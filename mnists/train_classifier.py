@@ -8,8 +8,14 @@ import torch.optim as optim
 from torchvision import datasets, transforms
 from torch.optim.lr_scheduler import StepLR
 
+from pytorch_grad_cam import GradCAM
+from pytorch_grad_cam.utils.image import show_cam_on_image
+import matplotlib.pyplot as plt
+import numpy as np
+
 from mnists.models.classifier import CNN
 from mnists.dataloader import get_tensor_dataloaders, TENSOR_DATASETS
+import pathlib
 
 def train(args, model, device, train_loader, optimizer, epoch):
     model.train()
@@ -53,6 +59,19 @@ def test(model, device, test_loader):
         test_loss, correct, len(test_loader.dataset),
         100. * correct / len(test_loader.dataset)))
 
+def do_cam(model, device, test_loader):
+    model.eval()
+    cam = GradCAM(model, [model.model[-4]], use_cuda=device.type == 'cuda')
+    for data, target in test_loader:
+        print(target)
+        data, target = data.to(device), target.to(device)
+        grayscale_cam = cam(data)
+        # grayscale_cam = grayscale_cam[0, :]
+        # img = np.clip((data[0, :].permute(1, 2, 0).cpu().numpy() + 1) / 2, 0, 1)
+        # visualization = show_cam_on_image(img, grayscale_cam, use_rgb=True)
+        # plt.imshow(visualization)
+        # plt.show()
+
 def main(args):
     # model and dataloader
     model = CNN()
@@ -65,15 +84,20 @@ def main(args):
     # push to device and train
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = model.to(device)
-
+    do_cam(model, device, dl_test)
+    
     for epoch in range(1, args.epochs + 1):
         train(args, model, device, dl_train, optimizer, epoch)
         test(model, device, dl_test)
+        do_cam(model, device, dl_test)
         scheduler.step()
+        # if epoch == 1:
+    if args.grad_cam:
+        do_cam(model, device, dl_test)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset', type=str, required=True, choices=TENSOR_DATASETS,
+    parser.add_argument('--dataset', type=str, default="double_colored_MNIST", choices=TENSOR_DATASETS,
                         help='Provide dataset name.')
     parser.add_argument('--batch_size', type=int, default=64, metavar='N',
                         help='input batch size for training (default: 64)')
@@ -85,6 +109,7 @@ if __name__ == '__main__':
                         help='Learning rate step gamma (default: 0.7)')
     parser.add_argument('--log-interval', type=int, default=100, metavar='N',
                         help='how many batches to wait before logging training status')
+    parser.add_argument('--grad_cam', action='store_true', help='Use Grad-CAM')
     args = parser.parse_args()
 
     print(args)

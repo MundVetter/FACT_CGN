@@ -1,4 +1,3 @@
-from imagenet.models.classifier_ensemble import InvariantEnsemble
 import torch
 from tqdm import tqdm
 
