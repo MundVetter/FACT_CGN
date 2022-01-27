@@ -5,6 +5,7 @@ repackage.up()
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
+
 from torchvision import datasets, transforms
 from torch.optim.lr_scheduler import StepLR
 
@@ -59,18 +60,28 @@ def test(model, device, test_loader):
         test_loss, correct, len(test_loader.dataset),
         100. * correct / len(test_loader.dataset)))
 
+def rgb2gray(rgb):
+    return np.dot(rgb[...,:3], [0.2989, 0.5870, 0.1140])
+
 def do_cam(model, device, test_loader):
     model.eval()
     cam = GradCAM(model, [model.model[-4]], use_cuda=device.type == 'cuda')
-    for data, target in test_loader:
-        print(target)
+
+    pathlib.Path(f'mnists/data/grad_cam/{args.dataset}/').mkdir(parents=True, exist_ok=True)
+    for i, (data, target) in enumerate(test_loader):
         data, target = data.to(device), target.to(device)
         grayscale_cam = cam(data)
-        # grayscale_cam = grayscale_cam[0, :]
-        # img = np.clip((data[0, :].permute(1, 2, 0).cpu().numpy() + 1) / 2, 0, 1)
-        # visualization = show_cam_on_image(img, grayscale_cam, use_rgb=True)
-        # plt.imshow(visualization)
-        # plt.show()
+        
+        for j, (c, img, target) in enumerate(zip(grayscale_cam, data,target)):
+            path = f'mnists/data/grad_cam/{args.dataset}/{i}_{j}_{target}'
+            img = np.clip(rgb2gray(img.permute(1, 2, 0).cpu().numpy().squeeze()), 0, 1)
+            img = np.dstack((img, img, img))
+
+            vis = show_cam_on_image(img, c)
+            plt.imsave(f'{path}_overlay.png', vis)
+            plt.imsave(f'{path}.png', c)
+
+
 
 def main(args):
     # model and dataloader
@@ -84,12 +95,10 @@ def main(args):
     # push to device and train
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = model.to(device)
-    do_cam(model, device, dl_test)
     
     for epoch in range(1, args.epochs + 1):
         train(args, model, device, dl_train, optimizer, epoch)
         test(model, device, dl_test)
-        do_cam(model, device, dl_test)
         scheduler.step()
         # if epoch == 1:
     if args.grad_cam:
