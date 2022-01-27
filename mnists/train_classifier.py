@@ -118,7 +118,7 @@ if __name__ == '__main__':
                         help='Learning rate step gamma (default: 0.7)')
     parser.add_argument('--log-interval', type=int, default=100, metavar='N',
                         help='how many batches to wait before logging training status')
-    parser.add_argument('--grad_cam', action='store_true', help='Use Grad-CAM')
+    parser.add_argument('--grad-cam', action='store_true', help='Use Grad-CAM')
     args = parser.parse_args()
 
     print(args)
