@@ -63,7 +63,7 @@ def test(model, device, test_loader):
 def rgb2gray(rgb):
     return np.dot(rgb[...,:3], [0.2989, 0.5870, 0.1140])
 
-def do_cam(model, device, test_loader):
+def do_cam(model, device, test_loader, args):
     model.eval()
     cam = GradCAM(model, [model.model[-4]], use_cuda=device.type == 'cuda')
 
