@@ -102,7 +102,7 @@ def main(args):
         scheduler.step()
         # if epoch == 1:
     if args.grad_cam:
-        do_cam(model, device, dl_test)
+        do_cam(model, device, dl_test, args)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
