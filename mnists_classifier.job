@@ -15,10 +15,13 @@ pip install --quiet tqdm==4.62.3 repackage==0.7.3 torchvision==0.11.2 yacs==0.1.
 cd $HOME/counterfactual_generative_networks
 
 srun python mnists/generate_data.py --weight_path mnists/experiments/cgn_wildlife_MNIST/weights/ckp.pth --dataset wildlife_MNIST --no_cfs 5 --dataset_size 100000
-srun python -u mnists/train_classifier.py --dataset wildlife_MNIST_counterfactual
+srun python -u mnists/train_classifier.py --dataset wildlife_MNIST_counterfactual --grad_cam
+srun python -u mnists/train_classifier.py --dataset wildlife_MNIST --grad_cam
 
 srun python -u mnists/generate_data.py --weight_path mnists/experiments/cgn_double_colored_MNIST/weights/ckp.pth --dataset double_colored_MNIST --no_cfs 10 --dataset_size 100000
-srun python -u mnists/train_classifier.py --dataset double_colored_MNIST_counterfactual
+srun python -u mnists/train_classifier.py --dataset double_colored_MNIST_counterfactual --grad_cam
+srun python -u mnists/train_classifier.py --dataset double_colored_MNIST --grad_cam
 
 srun python -u mnists/generate_data.py --weight_path mnists/experiments/cgn_colored_MNIST/weights/ckp.pth --dataset colored_MNIST --no_cfs 10 --dataset_size 100000
-srun python -u mnists/train_classifier.py --dataset colored_MNIST_counterfactual
+srun python -u mnists/train_classifier.py --dataset colored_MNIST_counterfactual --grad_cam
+srun python -u mnists/train_classifier.py --dataset colored_MNIST --grad_cam
