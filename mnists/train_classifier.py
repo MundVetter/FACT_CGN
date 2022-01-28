@@ -88,6 +88,7 @@ def do_cam(model, device, test_loader, args):
             vis = show_cam_on_image(img, c)
             plt.imsave(f'{path}_overlay.png', vis)
             plt.imsave(f'{path}.png', c)
+            plt.imsave(f'{path}_img.png', img)
 
 
 def main(args):
@@ -127,7 +128,7 @@ def main(args):
         pathlib.Path(f'mnists/weights/').mkdir(parents=True, exist_ok=True)
         torch.save(model.state_dict(), path)
     test(model, device, dl_test)
-    if args.do_cam:
+    if args.grad_cam:
         do_cam(model, device, dl_test, args)
 
 
