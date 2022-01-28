@@ -73,7 +73,7 @@ def do_cam(model, device, test_loader, args):
     model.eval()
     cam = GradCAM(model, [model.model[-4]], use_cuda=device.type == 'cuda')
 
-    pathlib.Path(f'mnists/data/grad_cam/{args.dataset}/').mkdir(parents=True, exist_ok=True)
+    pathlib.Path(f'mnists/data/grad_cam/{args.dataset}_{args.original}_{args.guide_target}/').mkdir(parents=True, exist_ok=True)
     for i, (data, target) in enumerate(test_loader):
         data, target = data.to(device), target.to(device)
         if args.guide_target:
@@ -81,7 +81,7 @@ def do_cam(model, device, test_loader, args):
         else:
             grayscale_cam = cam(data)
         for j, (c, img, target) in enumerate(zip(grayscale_cam, data,target)):
-            path = f'mnists/data/grad_cam/{args.dataset}/{i}_{j}_{target}'
+            path = f'mnists/data/grad_cam/{args.dataset}_{args.original}_{args.guide_target}/{i}_{j}_{target}'
             img = np.clip(rgb2gray(img.permute(1, 2, 0).cpu().numpy().squeeze()), 0, 1)
             img = np.dstack((img, img, img))
 
@@ -108,7 +108,7 @@ def main(args):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = model.to(device)
 
-    path = f'mnists/weights/mnist_cnn_{args.dataset}.pt'
+    path = f'mnists/weights/mnist_cnn_{args.dataset}_{args.original}.pt'
     if args.use_pretrained:
         model.load_state_dict(torch.load(path))
     else:
