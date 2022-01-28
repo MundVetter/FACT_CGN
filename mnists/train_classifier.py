@@ -16,6 +16,7 @@ import numpy as np
 
 from mnists.models.classifier import CNN
 from mnists.dataloader import get_tensor_dataloaders, TENSOR_DATASETS
+from pytorch_grad_cam.utils.model_targets import ClassifierOutputTarget
 import pathlib
 
 def train(args, model, device, train_loader, optimizer, epoch):
@@ -70,8 +71,10 @@ def do_cam(model, device, test_loader, args):
     pathlib.Path(f'mnists/data/grad_cam/{args.dataset}/').mkdir(parents=True, exist_ok=True)
     for i, (data, target) in enumerate(test_loader):
         data, target = data.to(device), target.to(device)
-        grayscale_cam = cam(data)
-        
+        if args.guide_target:
+            grayscale_cam = cam(data, [ClassifierOutputTarget(t) for t in target])
+        else:
+            grayscale_cam = cam(data)
         for j, (c, img, target) in enumerate(zip(grayscale_cam, data,target)):
             path = f'mnists/data/grad_cam/{args.dataset}/{i}_{j}_{target}'
             img = np.clip(rgb2gray(img.permute(1, 2, 0).cpu().numpy().squeeze()), 0, 1)
@@ -80,8 +83,6 @@ def do_cam(model, device, test_loader, args):
             vis = show_cam_on_image(img, c)
             plt.imsave(f'{path}_overlay.png', vis)
             plt.imsave(f'{path}.png', c)
-
-
 
 def main(args):
     # model and dataloader
@@ -95,18 +96,26 @@ def main(args):
     # push to device and train
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = model.to(device)
-    
-    for epoch in range(1, args.epochs + 1):
-        train(args, model, device, dl_train, optimizer, epoch)
-        test(model, device, dl_test)
-        scheduler.step()
-        # if epoch == 1:
-    if args.grad_cam:
+
+    path = f'mnists/weights/mnist_cnn_{args.dataset}.pt'
+    if args.use_pretrained:
+        model.load_state_dict(torch.load(path))
+    else:
+        for epoch in range(1, args.epochs + 1):
+            train(args, model, device, dl_train, optimizer, epoch)
+            test(model, device, dl_test)
+            scheduler.step()
+        pathlib.Path(f'mnists/weights/').mkdir(parents=True, exist_ok=True)
+        torch.save(model.state_dict(), path)
+
+    test(model, device, dl_test)
+    if args.do_cam:
         do_cam(model, device, dl_test, args)
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset', type=str, default="double_colored_MNIST", choices=TENSOR_DATASETS,
+    parser.add_argument('--dataset', type=str, default="colored_MNIST", choices=TENSOR_DATASETS,
                         help='Provide dataset name.')
     parser.add_argument('--batch_size', type=int, default=64, metavar='N',
                         help='input batch size for training (default: 64)')
@@ -119,6 +128,9 @@ if __name__ == '__main__':
     parser.add_argument('--log-interval', type=int, default=100, metavar='N',
                         help='how many batches to wait before logging training status')
     parser.add_argument('--grad_cam', action='store_true', help='Use Grad-CAM')
+    parser.add_argument('--guide_target', action='store_true', help='Guides the cam to target class')
+    parser.add_argument('--use_pretrained', action='store_true', help='Use pretrained weights')
+    # parser.add_argument('--weight')
     args = parser.parse_args()
 
     print(args)
