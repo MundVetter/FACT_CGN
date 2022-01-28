@@ -188,20 +188,28 @@ TENSOR_DATASETS = ['colored_MNIST', 'colored_MNIST_counterfactual',
                    'double_colored_MNIST', 'double_colored_MNIST_counterfactual',
                    'wildlife_MNIST', 'wildlife_MNIST_counterfactual']
 
-def get_tensor_dataloaders(dataset, batch_size=64):
+def get_tensor_dataloaders(dataset, batch_size=64, original=False):
     assert dataset in TENSOR_DATASETS, f"Unknown datasets {dataset}"
 
     if 'counterfactual' in dataset:
-        tensor = torch.load(f'mnists/data/{dataset}.pth')
-        ds_train = TensorDataset(*tensor[:2])
-        dataset = dataset.replace('_counterfactual', '')
+        if original:
+            tensor = torch.load(f'mnists/data/{dataset}.pth')
+            ds_train = TensorDataset(*tensor[:2])
+            dataset = dataset.replace('_counterfactual', '')
+            original = TensorDataset(*torch.load(f'mnists/data/{dataset}_train.pth'))
+            ds_train = torch.utils.data.ConcatDataset([ds_train, original])
+        else:
+            tensor = torch.load(f'mnists/data/{dataset}.pth')
+            ds_train = TensorDataset(*tensor[:2])
+            dataset = dataset.replace('_counterfactual', '')
     else:
         ds_train = TensorDataset(*torch.load(f'mnists/data/{dataset}_train.pth'))
     ds_test = TensorDataset(*torch.load(f'mnists/data/{dataset}_test.pth'))
 
-    dl_train = DataLoader(ds_train, batch_size=batch_size, num_workers=4,
+    dl_train = DataLoader(ds_train, batch_size=batch_size, num_workers=0,
                           shuffle=True, pin_memory=True)
-    dl_test = DataLoader(ds_test, batch_size=batch_size*10, num_workers=4,
+    dl_test = DataLoader(ds_test, batch_size=batch_size*10, num_workers=0,
                          shuffle=False, pin_memory=True)
 
     return dl_train, dl_test
+

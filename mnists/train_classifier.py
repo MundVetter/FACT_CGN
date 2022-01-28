@@ -43,6 +43,9 @@ def train(args, model, device, train_loader, optimizer, epoch):
         loss, correct, len(train_loader.dataset),
         100. * correct / len(train_loader.dataset)))
 
+    return 100. * correct / len(train_loader.dataset)
+
+
 def test(model, device, test_loader):
     model.eval()
     test_loss = 0
@@ -60,7 +63,9 @@ def test(model, device, test_loader):
     print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.3f}%)\n'.format(
         test_loss, correct, len(test_loader.dataset),
         100. * correct / len(test_loader.dataset)))
-
+    
+    return 100. * correct / len(test_loader.dataset)
+    
 def rgb2gray(rgb):
     return np.dot(rgb[...,:3], [0.2989, 0.5870, 0.1140])
 
@@ -84,10 +89,15 @@ def do_cam(model, device, test_loader, args):
             plt.imsave(f'{path}_overlay.png', vis)
             plt.imsave(f'{path}.png', c)
 
+
 def main(args):
     # model and dataloader
+    print("Making model")
     model = CNN()
-    dl_train, dl_test = get_tensor_dataloaders(args.dataset, args.batch_size)
+    print("Making dataloaders")
+    dl_train, dl_test = get_tensor_dataloaders(args.dataset, args.batch_size, args.original)
+    best_test_acc = 0
+    best_train_acc = 0
 
     # Optimizer
     optimizer = optim.Adadelta(model.parameters(), lr=args.lr)
@@ -102,12 +112,20 @@ def main(args):
         model.load_state_dict(torch.load(path))
     else:
         for epoch in range(1, args.epochs + 1):
-            train(args, model, device, dl_train, optimizer, epoch)
-            test(model, device, dl_test)
+            print("EPOCH", epoch)
+            print("Calling train function")
+            train_acc = train(args, model, device, dl_train, optimizer, epoch)
+            print("Calling test function")
+            test_acc = test(model, device, dl_test)
+
+            if test_acc > best_test_acc:
+                best_test_acc = test_acc
+                best_train_acc = train_acc
+
             scheduler.step()
+        print(best_test_acc, best_train_acc)
         pathlib.Path(f'mnists/weights/').mkdir(parents=True, exist_ok=True)
         torch.save(model.state_dict(), path)
-
     test(model, device, dl_test)
     if args.do_cam:
         do_cam(model, device, dl_test, args)
@@ -127,10 +145,11 @@ if __name__ == '__main__':
                         help='Learning rate step gamma (default: 0.7)')
     parser.add_argument('--log-interval', type=int, default=100, metavar='N',
                         help='how many batches to wait before logging training status')
+    parser.add_argument('--original', default=False, action='store_true',
+                        help='original data (True) or no original data (False)')
     parser.add_argument('--grad_cam', action='store_true', help='Use Grad-CAM')
     parser.add_argument('--guide_target', action='store_true', help='Guides the cam to target class')
     parser.add_argument('--use_pretrained', action='store_true', help='Use pretrained weights')
-    # parser.add_argument('--weight')
     args = parser.parse_args()
 
     print(args)
