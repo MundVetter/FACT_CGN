@@ -82,13 +82,14 @@ def do_cam(model, device, test_loader, args):
             grayscale_cam = cam(data)
         for j, (c, img, target) in enumerate(zip(grayscale_cam, data,target)):
             path = f'mnists/data/grad_cam/{args.dataset}_{args.original}_{args.guide_target}/{i}_{j}_{target}'
-            img = np.clip(rgb2gray(img.permute(1, 2, 0).cpu().numpy().squeeze()), 0, 1)
+            img = np.clip(img.permute(1, 2, 0).cpu().numpy().squeeze(), 0, 1)
+            plt.imsave(f'{path}_img.png', img)
+            img = np.clip(rgb2gray(img), 0, 1)
             img = np.dstack((img, img, img))
 
             vis = show_cam_on_image(img, c)
             plt.imsave(f'{path}_overlay.png', vis)
             plt.imsave(f'{path}.png', c)
-            plt.imsave(f'{path}_img.png', img)
 
 
 def main(args):

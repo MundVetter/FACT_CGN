@@ -17,17 +17,23 @@ cd $HOME/FACT_CGN
 srun python -u mnists/generate_data.py --dataset colored_MNIST
 srun python -u mnists/train_classifier.py --dataset colored_MNIST --grad_cam --guide_target
 srun python -u mnists/generate_data.py --weight_path mnists/experiments/cgn_colored_MNIST/weights/ckp.pth --dataset colored_MNIST --no_cfs 10 --dataset_size 100000 --counterfactual
+srun python -u mnists/train_classifier.py --dataset colored_MNIST_counterfactual --grad_cam --guide_target
+srun python -u mnists/train_classifier.py --dataset colored_MNIST_counterfactual --grad_cam--use_pretrained
 srun python -u mnists/train_classifier.py --dataset colored_MNIST_counterfactual --grad_cam --guide_target --original
 srun python -u mnists/train_classifier.py --dataset colored_MNIST_counterfactual --grad_cam --original --use_pretrained
 
 srun python -u mnists/generate_data.py --dataset wildlife_MNIST
 srun python -u mnists/train_classifier.py --dataset wildlife_MNIST --grad_cam --guide_target
 srun python mnists/generate_data.py --weight_path mnists/experiments/cgn_wildlife_MNIST/weights/ckp.pth --dataset wildlife_MNIST --no_cfs 5 --dataset_size 100000 --counterfactual
+srun python -u mnists/train_classifier.py --dataset wildlife_MNIST_counterfactual --grad_cam --guide_target 
+srun python -u mnists/train_classifier.py --dataset wildlife_MNIST_counterfactual --grad_cam --use_pretrained
 srun python -u mnists/train_classifier.py --dataset wildlife_MNIST_counterfactual --grad_cam --guide_target --original
 srun python -u mnists/train_classifier.py --dataset wildlife_MNIST_counterfactual --grad_cam --original --use_pretrained
 
 srun python -u mnists/generate_data.py --dataset double_colored_MNIST
 srun python -u mnists/train_classifier.py --dataset double_colored_MNIST --grad_cam --guide_target
 srun python -u mnists/generate_data.py --weight_path mnists/experiments/cgn_double_colored_MNIST/weights/ckp.pth --dataset double_colored_MNIST --no_cfs 10 --dataset_size 100000 --counterfactual
+srun python -u mnists/train_classifier.py --dataset double_colored_MNIST_counterfactual --grad_cam --guide_target
+srun python -u mnists/train_classifier.py --dataset double_colored_MNIST_counterfactual --grad_cam --use_pretrained
 srun python -u mnists/train_classifier.py --dataset double_colored_MNIST_counterfactual --grad_cam --guide_target --original
 srun python -u mnists/train_classifier.py --dataset double_colored_MNIST_counterfactual --grad_cam --original --use_pretrained
