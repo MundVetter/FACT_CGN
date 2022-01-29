@@ -168,7 +168,7 @@ def main_worker(gpu, ngpus_per_node, args):
     
 
     ### dataloaders
-    train_loader, val_loader, train_sampler = get_imagenet_dls(args.distributed, args.batch_size, args.workers, args.tiny)
+    train_loader, val_loader, train_sampler = get_imagenet_dls(args.distributed, args.batch_size, args.workers, args.mini)
     cf_train_loader, cf_val_loader, cf_train_sampler = get_cf_imagenet_dls(args.cf_data, args.cf_ratio, len(train_loader), args.distributed, args.batch_size, args.workers)
     dl_shape_bias = get_cue_conflict_dls(args.batch_size, args.workers)
     dls_in9 = get_in9_dls(args.distributed, args.batch_size, args.workers, ['original', 'mixed_rand', 'mixed_same'])
@@ -603,14 +603,14 @@ if __name__ == '__main__':
                         'multi node data parallel training')
 
     # my arguments
-    parser.add_argument('--cf_data', required=True, type=str,
+    parser.add_argument('--cf_data', default='', type=str,
                         help='Path to the counterfactual dataset.')
     parser.add_argument('--name', default='', type=str,
                         help='name of the experiment')
     parser.add_argument('--cf_ratio', default=1.0, type=float,
                         help='Ratio of CF/Real data')
-    parser.add_argument('--tiny', dest='tiny', action='store_true',
-                        help='use tiny imagenet dataset')
+    parser.add_argument('--mini', action='store_true',
+                        help='use mini imagenet dataset')
 
     args = parser.parse_args()
     print(args)

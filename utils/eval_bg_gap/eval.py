@@ -1,4 +1,3 @@
-from imagenet.models.classifier_ensemble import InvariantEnsemble
 import torch
 from tqdm import tqdm
 
@@ -21,11 +20,9 @@ def eval_bg_gap(loader, model, map_to_in9):
     with torch.no_grad():
         for i, (inp, target) in iterator:
             output = model(inp)
-            if isinstance(model, InvariantEnsemble):
-                for k in correct.keys():
-                    correct[k] += count_correct(output[k + '_preds'], target, map_to_in9)
-            else:
-                correct['avg'] += count_correct(output, target, map_to_in9)
+            # correct['avg'] += count_correct(output, target, map_to_in9)
+            for k in correct.keys():
+                correct[k] += count_correct(output[k + '_preds'], target, map_to_in9)
 
     total_len = loader.batch_size * len(loader)
     acc1 = {k: torch.tensor(100 * v / total_len) for k, v in correct.items()}
