@@ -29,4 +29,6 @@ tags
 !imagenet/data/u_fixed.pth
 *.out
 
+mnists/weights/*
+
 .vscode

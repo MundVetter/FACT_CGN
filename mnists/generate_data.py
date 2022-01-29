@@ -9,7 +9,7 @@ from mnists.train_cgn import CGN
 from mnists.dataloader import get_dataloaders
 from utils import load_cfg
 
-def generate_cf_dataset(cgn, path, dataset_size, no_cfs, device):
+def generate_cf_dataset(cgn, path, dataset_size, no_cfs, device, counterfactual):
     x, y = [], []
     cgn.batch_size = 100
     n_classes = 10
@@ -23,7 +23,7 @@ def generate_cf_dataset(cgn, path, dataset_size, no_cfs, device):
 
         # generate counterfactuals, i.e., same masks, foreground/background vary
         for _ in range(no_cfs):
-            _, foreground, background = cgn(y_gen, counterfactual=True)
+            _, foreground, background = cgn(y_gen, counterfactual=counterfactual)
             x_gen = mask * foreground + (1 - mask) * background
 
             x.append(x_gen.detach().cpu())
@@ -56,6 +56,10 @@ if __name__ == "__main__":
                         help='Size of the dataset. For counterfactual data: the more the better.')
     parser.add_argument('--no_cfs', type=int, default=1,
                         help='How many counterfactuals to sample per datapoint')
+    parser.add_argument('--counterfactual', default=False, action='store_true',
+                    help='CGN (True) or GAN (False)')
+
+
     args = parser.parse_args()
     print(args)
 
@@ -65,7 +69,7 @@ if __name__ == "__main__":
     # Generate the dataset
     if not args.weight_path:
         # get dataloader
-        dl_train, dl_test = get_dataloaders(args.dataset, batch_size=1000, workers=8)
+        dl_train, dl_test = get_dataloaders(args.dataset, batch_size=1000, workers=0)
 
         # generate
         generate_dataset(dl=dl_train, path=args.dataset + '_train.pth')
@@ -83,4 +87,4 @@ if __name__ == "__main__":
         print(f"Generating the counterfactual {args.dataset} of size {args.dataset_size}")
         generate_cf_dataset(cgn=cgn, path=args.dataset + '_counterfactual.pth',
                             dataset_size=args.dataset_size, no_cfs=args.no_cfs,
-                            device=device)
+                            device=device, counterfactual=bool(args.counterfactual))

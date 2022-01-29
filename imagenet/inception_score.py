@@ -8,6 +8,7 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 import argparse
+from operator import is_
 import torch
 from torch import nn
 from torch.autograd import Variable
@@ -15,10 +16,10 @@ from torch.nn import functional as F
 import torch.utils.data
 
 from torchvision.models.inception import inception_v3
-from torch.utils.data import Dataset
 import os
 
 from imagenet.dataloader import ImageDataset
+from imagenet.is_tf import get_inception_score, get_inception_score_bugged
 
 import numpy as np
 from scipy.stats import entropy
@@ -92,13 +93,34 @@ if __name__ == '__main__':
     parser.add_argument('--resize', action='store_true', help='Resize images to 299x299 before scoring')
     parser.add_argument('--cuda', action='store_true', help='Use GPU')
     parser.add_argument('--kind', type=str, default='x_gen', help='Kind of images to use. E.g CGN Biggan or mask')
+    parser.add_argument('--tensorflow', action='store_true', help='Use tensorflow')
+    parser.add_argument('--bugged', action='store_true', help='Use buggy version of tensorflow')
     args = parser.parse_args()
 
-    print("Loading images...")
-    imgs = ImageDataset(args.path, kind = args.kind, transform=transform_img)
-    
-    print('Computing inception score...')
-    is_score = inception_score(imgs, cuda=args.cuda, batch_size=args.batch_size, resize=args.resize, splits=args.splits)
+    if args.tensorflow:
+        imgs = ImageDataset(args.path, args.kind, transform = np.array)
+        n = len(imgs)
+        flattened_size = 256 * 256 * 3
+        if args.bugged:
+            dataloader = torch.utils.data.DataLoader(imgs, batch_size=1)
+            imgs = []
+            for i, batch in enumerate(dataloader, 0):
+                if i == 5000:
+                    break
+                imgs.append(batch.squeeze().numpy())
+            is_score = get_inception_score_bugged(imgs, splits=1)
+        else:
+            all_samples = np.zeros([int(np.ceil(float(n)/args.batch_size)*args.batch_size), flattened_size],dtype=np.uint8)
+            dataloader = torch.utils.data.DataLoader(imgs, batch_size=args.batch_size, drop_last=True)
+            for i, batch in enumerate(dataloader):# inception score for num_batches of real data
+                all_samples[i*args.batch_size:(i+1)*args.batch_size]= batch.numpy().reshape(args.batch_size, flattened_size).astype(np.uint8)
+            is_score = get_inception_score(all_samples[:n].reshape([-1,256,256,3]).transpose([0,3,1,2]), args.splits)
+    else :
+        print("Loading images...")
+        imgs = ImageDataset(args.path, kind = args.kind, transform=transform_img)
+        
+        print('Computing inception score...')
+        is_score = inception_score(imgs, cuda=args.cuda, batch_size=args.batch_size, resize=args.resize, splits=args.splits)
     print('Mean: {:.3f}'.format(is_score[0]))
     print('Std: {:.3f}'.format(is_score[1]))
 

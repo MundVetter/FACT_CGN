@@ -20,7 +20,6 @@ def eval_bg_gap(loader, model, map_to_in9):
     with torch.no_grad():
         for i, (inp, target) in iterator:
             output = model(inp)
-            # correct['avg'] += count_correct(output, target, map_to_in9)
             for k in correct.keys():
                 correct[k] += count_correct(output[k + '_preds'], target, map_to_in9)
 
