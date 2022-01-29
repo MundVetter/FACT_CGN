@@ -91,6 +91,21 @@ def do_cam(model, device, test_loader, args):
             plt.imsave(f'{path}_overlay.png', vis)
             plt.imsave(f'{path}.png', c)
 
+def per_class_accuracy(model, device, test_loader):
+    nb_classes = 10
+
+    confusion_matrix = torch.zeros(nb_classes, nb_classes)
+    with torch.no_grad():
+        for i, (inputs, classes) in enumerate(test_loader):
+            inputs = inputs.to(device)
+            classes = classes.to(device)
+            outputs = model(inputs)
+            _, preds = torch.max(outputs, 1)
+            for t, p in zip(classes.view(-1), preds.view(-1)):
+                    confusion_matrix[t.long(), p.long()] += 1
+    
+    print(confusion_matrix)
+    print(confusion_matrix.diag()/confusion_matrix.sum(1))
 
 def main(args):
     # model and dataloader
@@ -129,6 +144,8 @@ def main(args):
         pathlib.Path(f'mnists/weights/').mkdir(parents=True, exist_ok=True)
         torch.save(model.state_dict(), path)
     test(model, device, dl_test)
+    per_class_accuracy(model, device, dl_test)
+
     if args.grad_cam:
         do_cam(model, device, dl_test, args)
 
