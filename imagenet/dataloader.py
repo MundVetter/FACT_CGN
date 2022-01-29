@@ -91,70 +91,9 @@ def transform_labels(x):
 
 # datasets
 
-TINY_CLASSES = [1, 25, 30, 32, 50, 61, 69, 71, 75, 76, 79, 99, 105, 107, 109, 113, 114, 115,
-                122, 123, 128, 145, 146, 149, 151, 187, 207, 208, 235, 267, 281, 283, 285, 286,
-                291, 294, 301, 308, 309, 311, 313, 314, 315, 319, 323, 325, 329, 338, 341, 345,
-                347, 349, 353, 354, 365, 367, 372, 386, 387, 398, 400, 406, 411, 414, 421, 424,
-                425, 427, 430, 435, 436, 437, 438, 440, 445, 447, 448, 457, 458, 462, 463, 466,
-                467, 470, 471, 474, 480, 485, 488, 492, 496, 500, 508, 509, 511, 517, 525, 526,
-                532, 542, 543, 557, 562, 565, 567, 568, 570, 573, 576, 604, 605, 612, 614, 619,
-                621, 625, 627, 635, 645, 652, 655, 675, 677, 678, 682, 683, 687, 704, 707, 716,
-                720, 731, 733, 734, 735, 737, 739, 744, 747, 758, 760, 761, 765, 768, 774, 779,
-                781, 786, 801, 806, 808, 811, 815, 817, 821, 826, 837, 839, 842, 845, 849, 850,
-                853, 862, 866, 873, 874, 877, 879, 887, 888, 890, 899, 900, 909, 910, 917, 923,
-                924, 928, 929, 932, 935, 938, 945, 947, 950, 951, 954, 957, 962, 963, 964, 967,
-                970, 972, 973, 975, 978, 988]
-
-class ImagenetTiny(Dataset) :
-
-    def __init__(self, train=True):
-        super(ImagenetTiny, self).__init__()
-        root = join('.', 'imagenet', 'data')
-        normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                         std=[0.229, 0.224, 0.225])
-
-        # Transforms
-        if train:
-            ims_path = join(root, 'imagenet_tiny', 'train')
-            t_list = [transforms.RandomResizedCrop(56), transforms.RandomHorizontalFlip()]
-        else:
-            ims_path = join(root, 'imagenet_tiny', 'val')
-            t_list = [transforms.Resize(64), transforms.CenterCrop(56)]
-
-        t_list += [transforms.ToTensor(), normalize]
-        self.T_ims = transforms.Compose(t_list)
-
-        self.im_paths, self.labels = self.get_data(ims_path)
-
-    def set_len(self, n):
-        assert n < len(self), "Ratio is too large, not enough CF data available"
-        self.im_paths = self.im_paths[:n]
-        self.labels = self.labels[:n]
-
-    @staticmethod
-    def get_data(p):
-        ims, labels = [], []
-        subdirs = sorted(glob(p + '/*'))
-        for i, sub in enumerate(subdirs):
-            im = sorted(glob(sub + '/images/*'))
-            l = np.ones(len(im))*TINY_CLASSES[i]
-            ims.append(im), labels.append(l)
-        return np.concatenate(ims), np.concatenate(labels)
-
-    def __getitem__(self, idx):
-        ims = Image.open(self.im_paths[idx]).convert('RGB')
-        labels = self.labels[idx]
-        return {
-            'ims': self.T_ims(ims),
-            'labels': transform_labels(labels),
-        }
-
-    def __len__(self):
-        return len(self.im_paths)
-
 class ImagenetVanilla(Dataset) :
 
-    def __init__(self, train=True):
+    def __init__(self, train=True, mini=False):
         super(ImagenetVanilla, self).__init__()
         root = join('.', 'imagenet', 'data')
         normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
@@ -162,10 +101,10 @@ class ImagenetVanilla(Dataset) :
 
         # Transforms
         if train:
-            ims_path = join(root, 'imagenet', 'train')
+            ims_path = join(root, 'imagenet-mini' if mini else 'imagenet', 'train')
             t_list = [transforms.RandomResizedCrop(224), transforms.RandomHorizontalFlip()]
         else:
-            ims_path = join(root, 'imagenet', 'val')
+            ims_path = join(root, 'imagenet-mini' if mini else 'imagenet', 'val')
             t_list = [transforms.Resize(256), transforms.CenterCrop(224)]
 
         t_list += [transforms.ToTensor(), normalize]
@@ -211,7 +150,7 @@ class ImagenetCounterfactual(Dataset):
           "RUN_NAME_0000000_textures.jpg"
     '''
 
-    def __init__(self, ims_path, train=True, n_data=None, mode='x_gen', tiny=False):
+    def __init__(self, ims_path, train=True, n_data=None, mode='x_gen'):
         super(ImagenetCounterfactual, self).__init__()
         print(f"Loading counterfactual data from {ims_path}")
         self.full_df = self.get_data(ims_path, train, mode)
@@ -227,8 +166,6 @@ class ImagenetCounterfactual(Dataset):
         print(f"=> Current dataset sz: {len(self.df)}. Full dataset sz: {len(self.full_df)}")
 
         crop_from_to = (256, 224)
-        if tiny:
-            crop_from_to = (64, 56)
 
         # Transforms
         if train:
@@ -278,14 +215,12 @@ class ImagenetCounterfactual(Dataset):
         return len(self.df)
 
 class CueConflict(Dataset):
-    def __init__(self, tiny=False):
+    def __init__(self):
         super(CueConflict, self).__init__()
         path = 'imagenet/data/cue_conflict/'
         self.df = self.make_df(path)
 
         crop_from_to = (256, 224)
-        if tiny:
-            crop_from_to = (64, 56)
 
         self.T = transforms.Compose(
             [transforms.Resize(crop_from_to[0]),
@@ -338,18 +273,16 @@ class CueConflict(Dataset):
 
 class Imagenet9(object):
 
-    def __init__(self, data_path, tiny=False):
+    def __init__(self, data_path):
         self.ds_name = 'ImageNet9'
         self.data_path = data_path
         self.num_classes = 9
 
         resize_to = 224
-        if tiny:
-            resize_to = 56
 
         mean = torch.tensor([0.4717, 0.4499, 0.3837])
         std = torch.tensor([0.2600, 0.2516, 0.2575])
-        #TODO: probably resize for tiny imagenet.
+
         self.T = transforms.Compose([transforms.ToTensor(),
                                      transforms.Resize(resize_to),
                                      transforms.Normalize(mean,std)])
@@ -368,14 +301,10 @@ class Imagenet9(object):
 
 # dataloaders
 
-def get_imagenet_dls(distributed, batch_size, workers, tiny=False):
+def get_imagenet_dls(distributed, batch_size, workers, mini=False):
     # dataset
-    if tiny:
-        train_dataset = ImagenetTiny(train=True)
-        val_dataset = ImagenetTiny(train=False)
-    else:
-        train_dataset = ImagenetVanilla(train=True)
-        val_dataset = ImagenetVanilla(train=False)
+    train_dataset = ImagenetVanilla(train=True, mini=mini)
+    val_dataset = ImagenetVanilla(train=False, mini=mini)
 
     # sampler
     train_sampler = DistributedSampler(train_dataset) if distributed else None
@@ -390,14 +319,14 @@ def get_imagenet_dls(distributed, batch_size, workers, tiny=False):
 
     return train_loader, val_loader, train_sampler
 
-def get_cf_imagenet_dls(path, cf_ratio, len_dl_train, distributed, batch_size, workers, tiny=False):
+def get_cf_imagenet_dls(path, cf_ratio, len_dl_train, distributed, batch_size, workers):
     # determine how many images to use, based on given ratio
     cf_batch_sz = int(cf_ratio * batch_size)
     n_data = cf_batch_sz * len_dl_train
 
     # dataset
-    cf_train_dataset = ImagenetCounterfactual(path, train=True, n_data=n_data, tiny=tiny)
-    cf_val_dataset = ImagenetCounterfactual(path, train=False, tiny=tiny)
+    cf_train_dataset = ImagenetCounterfactual(path, train=True, n_data=n_data)
+    cf_val_dataset = ImagenetCounterfactual(path, train=False)
 
     # sampler
     cf_train_sampler = DistributedSampler(cf_train_dataset) if distributed else None
@@ -412,13 +341,13 @@ def get_cf_imagenet_dls(path, cf_ratio, len_dl_train, distributed, batch_size, w
 
     return cf_train_loader, cf_val_loader, cf_train_sampler
 
-def get_cue_conflict_dls(batch_size, workers, tiny=False):
-    return DataLoader(CueConflict(tiny), batch_size=batch_size, pin_memory=True, num_workers=workers)
+def get_cue_conflict_dls(batch_size, workers):
+    return DataLoader(CueConflict(), batch_size=batch_size, pin_memory=True, num_workers=workers)
 
-def get_in9_dls(distributed, batch_size, workers, variations=['mixed_rand', 'mixed_same'], tiny=False):
+def get_in9_dls(distributed, batch_size, workers, variations=['mixed_rand', 'mixed_same']):
     dls_in9 = {}
     for v in variations:
-        in9_ds = Imagenet9(join('.', 'imagenet', 'data', 'in9', v), tiny=tiny)
+        in9_ds = Imagenet9(join('.', 'imagenet', 'data', 'in9', v))
         dls_in9[v] = in9_ds.make_loader(distributed=distributed,
                                         batch_size=batch_size,
                                         workers=workers)

@@ -32,14 +32,11 @@ def interp(x0, x1, num_midpoints):
     return ((x0 * (1 - lerp.view(1, -1, 1))) + (x1 * lerp.view(1, -1, 1)))
 
 def interp_sheet(cgn, mode, ys, y_interp, num_midpoints, save_path,
-                 save_single=False, save_noise=True, tiny=False):
+                 save_single=False, save_noise=True):
     dev = cgn.get_device()
 
     if y_interp == -1:
-        if tiny:
-            y_interp = np.random.choice(TINY_CLASSES)
-        else:
-            y_interp = np.random.randint(0, 1000)
+        y_interp = np.random.randint(0, 1000)
 
     # Prepare zs
     dim_u = cgn.dim_u
@@ -142,25 +139,8 @@ BACKGROUNDS = [7, 9, 20, 30, 35, 46, 50, 65, 72, 93, 96, 97, 119, 133, 147, 337,
                383, 429, 460, 693, 801, 888, 947, 949, 952, 953, 955, 958, 970, 972, 973, 974,
                977, 979, 998]
 
-TINY_CLASSES = [1, 25, 30, 32, 50, 61, 69, 71, 75, 76, 79, 99, 105, 107, 109, 113, 114, 115,
-                122, 123, 128, 145, 146, 149, 151, 187, 207, 208, 235, 267, 281, 283, 285, 286,
-                291, 294, 301, 308, 309, 311, 313, 314, 315, 319, 323, 325, 329, 338, 341, 345,
-                347, 349, 353, 354, 365, 367, 372, 386, 387, 398, 400, 406, 411, 414, 421, 424,
-                425, 427, 430, 435, 436, 437, 438, 440, 445, 447, 448, 457, 458, 462, 463, 466,
-                467, 470, 471, 474, 480, 485, 488, 492, 496, 500, 508, 509, 511, 517, 525, 526,
-                532, 542, 543, 557, 562, 565, 567, 568, 570, 573, 576, 604, 605, 612, 614, 619,
-                621, 625, 627, 635, 645, 652, 655, 675, 677, 678, 682, 683, 687, 704, 707, 716,
-                720, 731, 733, 734, 735, 737, 739, 744, 747, 758, 760, 761, 765, 768, 774, 779,
-                781, 786, 801, 806, 808, 811, 815, 817, 821, 826, 837, 839, 842, 845, 849, 850,
-                853, 862, 866, 873, 874, 877, 879, 887, 888, 890, 899, 900, 909, 910, 917, 923,
-                924, 928, 929, 932, 935, 938, 945, 947, 950, 951, 954, 957, 962, 963, 964, 967,
-                970, 972, 973, 975, 978, 988]
-
-def sample_classes(mode, classes=None, tiny=False):
+def sample_classes(mode, classes=None):
     if mode == 'random':
-        if tiny:
-            return np.random.choice(TINY_CLASSES, 3).tolist()
-
         return np.random.randint(0, 1000, 3).tolist()
 
     elif mode == 'best_classes':
@@ -172,10 +152,7 @@ def sample_classes(mode, classes=None, tiny=False):
         return [int(c) for c in classes]
     
     elif mode == 'random_same_class':
-        if tiny:
-            random = np.random.choice(TINY_CLASSES)
-        else:
-            random = np.random.randint(0, 1000)
+        random = np.random.randint(0, 1000)
         return [random, random, random]
     else:
         assert ValueError("Unknown sample mode {mode}")
@@ -198,7 +175,7 @@ def main(args):
 
     # path setup
     time_str = datetime.now().strftime("%Y_%m_%d_%H_")
-    trunc_str = f"{args.run_name}_trunc_{args.truncation}_{'tiny' if args.tiny else ''}"
+    trunc_str = f"{args.run_name}_trunc_{args.truncation}"
     data_path = join('imagenet', 'data', time_str + trunc_str)
     ims_path = join(data_path, 'ims')
     pathlib.Path(ims_path).mkdir(parents=True, exist_ok=True)
@@ -213,14 +190,14 @@ def main(args):
     with torch.no_grad():
         for i in trange(args.n_data):
             # sample class vector and set up the save path
-            ys = sample_classes(args.mode, args.classes, args.tiny)
+            ys = sample_classes(args.mode, args.classes)
             im_name = f'{args.run_name}_{i:07}'
 
             if args.interp:
                 # interpolation between the first and second class in the class vector
                 interp_sheet(cgn=cgn, mode=args.interp, ys=ys, y_interp=args.interp_cls,
                              num_midpoints=args.midpoints, save_path=join(ims_path, im_name),
-                             save_single=args.save_single, save_noise=args.save_noise, tiny=args.tiny)
+                             save_single=args.save_single, save_noise=args.save_noise)
             else:
                 x_gt, mask, premask, foreground, background, bg_mask = cgn(ys=ys)
                 x_gen = mask * foreground + (1 - mask) * background
@@ -266,8 +243,6 @@ if __name__ == '__main__':
                         help='Sample new noise and save to disk for interpolation')
     parser.add_argument('--save_single', default=False, action='store_true',
                         help='Sample single images instead of sheets')
-    parser.add_argument('--tiny', dest='tiny', action='store_true',
-                        help='use tiny imagenet dataset')
 
     args = parser.parse_args()
     print(args)
