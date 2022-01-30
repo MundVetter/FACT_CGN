@@ -69,14 +69,12 @@ def test(model, device, test_loader):
 def rgb2gray(rgb):
     return np.dot(rgb[...,:3], [0.2989, 0.5870, 0.1140])
 
-def do_cam(model, device, test_loader, args, n = 1):
+def do_cam(model, device, test_loader, args):
     model.eval()
-    cam = GradCAM(model, [model.model[-4]], use_cuda=device.type == 'cuda')
+    cam = GradCAM(model, [model.model[-3]], use_cuda=device.type == 'cuda')
 
     pathlib.Path(f'mnists/data/grad_cam/{args.dataset}_{args.original}_{args.guide_target}/').mkdir(parents=True, exist_ok=True)
     for i, (data, target) in enumerate(test_loader):
-        if i >= n:
-            break
         data, target = data.to(device), target.to(device)
         if args.guide_target:
             grayscale_cam = cam(data, [ClassifierOutputTarget(t) for t in target])
