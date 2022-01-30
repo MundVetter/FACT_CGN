@@ -48,9 +48,10 @@ class ColoredMNIST(Dataset):
 
 class DoubleColoredMNIST(Dataset):
 
-    def __init__(self, train=True):
+    def __init__(self, train=True, random = True):
         self.train = train
         self.mnist_sz = 32
+        self.random = random
 
         # get mnist
         mnist = datasets.MNIST('mnists/data', train=True, download=True)
@@ -82,14 +83,20 @@ class DoubleColoredMNIST(Dataset):
             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
         ])
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx, i_ours = -1):
         i = self.labels[idx] if self.train else np.random.randint(10)
+        if i_ours > -1:
+            i = i_ours
         back_color = self.background_colors[i].clone()
-        back_color += torch.normal(0, 0.01, (3, 1, 1))
+        if self.random:
+            back_color += torch.normal(0, 0.01, (3, 1, 1))
 
         i = self.labels[idx] if self.train else np.random.randint(10)
+        if i_ours > -1:
+            i = i_ours
         obj_color = self.object_colors[i].clone()
-        obj_color += torch.normal(0, 0.01, (3, 1, 1))
+        if self.random:
+            obj_color += torch.normal(0, 0.01, (3, 1, 1))
 
         # get digit
         im_digit = (self.ims_digit[idx]/255.).to(torch.float32)

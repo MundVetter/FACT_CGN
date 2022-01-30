@@ -154,7 +154,7 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset', type=str, default="colored_MNIST", choices=TENSOR_DATASETS,
+    parser.add_argument('--dataset', type=str, default="double_colored_MNIST", choices=TENSOR_DATASETS,
                         help='Provide dataset name.')
     parser.add_argument('--batch_size', type=int, default=64, metavar='N',
                         help='input batch size for training (default: 64)')
