@@ -38,4 +38,4 @@ if __name__ == '__main__':
         ax.imshow(im)
         ax.axis('off')
 
-    plt.show()
+    plt.savefig(f'{path}/heatmap.pdf', bbox_inches='tight', pad_inches=0)
