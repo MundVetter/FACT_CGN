@@ -13,10 +13,8 @@ if __name__ == '__main__':
 
     print('Computing mean and std pixel values...')
     means = []
-    var = []
     for img in imgs:
         means.append(np.mean(img))
-        var.append(np.var(img))
 
     print('Mean: {:.3f}'.format(np.mean(means)))
-    print('Std: {:.3f}'.format(np.sqrt(np.mean(var))))
+    print('Std: {:.3f}'.format(np.std(means)))
