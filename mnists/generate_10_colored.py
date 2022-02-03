@@ -6,7 +6,8 @@ from mnists.dataloader import DoubleColoredMNIST
 
 test = DoubleColoredMNIST(train=False, random=False)
 dl = []
-index_order = [18, 16, 11, 0, 5, 6, 2, 21, 1]
+labels = list(test.labels.cpu().numpy())
+index_order = [labels.index(i) for i in range(10)]
 for i in index_order:
     for j in range(10):
         dl.append(test.__getitem__(i, j))

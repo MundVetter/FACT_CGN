@@ -71,7 +71,8 @@ def rgb2gray(rgb):
 
 def do_cam(model, device, test_loader, args):
     model.eval()
-    cam = GradCAM(model, [model.model[-3]], use_cuda=device.type == 'cuda')
+    # with torch.no_grad():
+    cam = GradCAM(model,  [model.model[-4]], use_cuda=device.type == 'cuda')
 
     pathlib.Path(f'mnists/data/grad_cam/{args.dataset}_{args.original}_{args.guide_target}/').mkdir(parents=True, exist_ok=True)
     for i, (data, target) in enumerate(test_loader):
@@ -126,7 +127,10 @@ def main(args):
 
     path = f'mnists/weights/mnist_cnn_{args.dataset}_{args.original}.pt'
     if args.use_pretrained:
-        model.load_state_dict(torch.load(path))
+        if next(model.parameters()).is_cuda:
+            model.load_state_dict(torch.load(path))
+        else:
+            model.load_state_dict(torch.load(path, map_location=device))
     else:
         for epoch in range(1, args.epochs + 1):
             print("EPOCH", epoch)
@@ -146,8 +150,8 @@ def main(args):
     test(model, device, dl_test)
     per_class_accuracy(model, device, dl_test)
 
-    if args.grad_cam:
-        do_cam(model, device, dl_test, args)
+    # if args.grad_cam:
+    do_cam(model, device, dl_test, args)
 
 
 if __name__ == '__main__':
@@ -168,7 +172,7 @@ if __name__ == '__main__':
                         help='original data (True) or no original data (False)')
     parser.add_argument('--grad_cam', action='store_true', help='Use Grad-CAM')
     parser.add_argument('--guide_target', action='store_true', help='Guides the cam to target class')
-    parser.add_argument('--use_pretrained', action='store_true', help='Use pretrained weights')
+    parser.add_argument('--use_pretrained', action='store_true', default=True, help='Use pretrained weights')
     args = parser.parse_args()
 
     print(args)
