@@ -30,5 +30,8 @@ tags
 *.out
 
 mnists/weights/*
+experiments/*.json
+
+table2_data_2.json
 
 .vscode
