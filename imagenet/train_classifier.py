@@ -296,7 +296,7 @@ def train(train_loader, cf_train_loader, model, criterion, optimizer, epoch, arg
         # compute gradient
         loss.backward()
 
-        if data_cf:
+        if data_cf is not None:
             # compute output for counterfactuals
             out_cf = model(data_cf['ims'])
             loss_cf = criterion(out_cf['shape_preds'], data_cf['shape_labels'])
@@ -312,7 +312,7 @@ def train(train_loader, cf_train_loader, model, criterion, optimizer, epoch, arg
         losses.update(loss.item(), data['ims'].size(0))
         top1_real.update(acc1[0], sz)
         top5_real.update(acc5[0], sz)
-        if data_cf:
+        if data_cf is not None:
             cf_losses.update(loss_cf.item(), data['ims'].size(0))
             acc1, acc5 = accuracy(out_cf['shape_preds'], data_cf['shape_labels'], topk=(1, 5))
             top1_shape.update(acc1[0], sz)
