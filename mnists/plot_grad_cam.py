@@ -11,7 +11,7 @@ if __name__ == '__main__':
     parser.add_argument('--original', action='store_true', default=False, help='Infuse originals into the dataset')
 
     args = parser.parse_args()
-    path = f'mnists/data/grad_cam/{args.dataset}_{args.original}_false/'
+    path = f'mnists/data/grad_cam/{args.dataset}_{args.original}_False/'
 
     if not os.path.exists(path):
         print("Grad cam folder for this dataset does not exist.")
@@ -39,3 +39,4 @@ if __name__ == '__main__':
         ax.axis('off')
 
     plt.savefig(f'{path}/heatmap.pdf', bbox_inches='tight', pad_inches=0)
+    plt.savefig(f'{path}/heatmap.png', bbox_inches='tight', pad_inches=0)
