@@ -242,7 +242,7 @@ class PercLossText(nn.Module):
         else:
             paint_temp = get_sampled_patches(mask, ims, self.patch_sz, self.sample_sz, n_up=self.n_up)
 
-        return self.loss(paint, paint_temp.detach()), paint_temp
+        return self.loss(paint, paint_temp.detach())
 
 # mask losses
 
