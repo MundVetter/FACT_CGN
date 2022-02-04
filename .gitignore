@@ -34,4 +34,6 @@ experiments/*.json
 
 table2_data_2.json
 
+imagenet/imagenet-mini/*
+
 .vscode
