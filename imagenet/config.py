@@ -35,6 +35,8 @@ __C.LAMBDA.MASK = 500
 __C.LAMBDA.TEXT = [0, 5, 5, 0]
 __C.LAMBDA.BG = 2000
 
+__C.FILL_RAND = False
+
 # Learning Rates
 __C.LR = CN()
 __C.LR.SHAPE = 8e-6
