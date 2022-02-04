@@ -172,7 +172,7 @@ if __name__ == '__main__':
                         help='original data (True) or no original data (False)')
     parser.add_argument('--grad_cam', action='store_true', help='Use Grad-CAM')
     parser.add_argument('--guide_target', action='store_true', help='Guides the cam to target class')
-    parser.add_argument('--use_pretrained', action='store_true', default=True, help='Use pretrained weights')
+    parser.add_argument('--use_pretrained', action='store_true', help='Use pretrained weights')
     args = parser.parse_args()
 
     print(args)
