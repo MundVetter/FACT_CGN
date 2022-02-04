@@ -320,6 +320,9 @@ def get_imagenet_dls(distributed, batch_size, workers, mini=False):
     return train_loader, val_loader, train_sampler
 
 def get_cf_imagenet_dls(path, cf_ratio, len_dl_train, distributed, batch_size, workers):
+    if path == '':
+        return None, None, None
+        
     # determine how many images to use, based on given ratio
     cf_batch_sz = int(cf_ratio * batch_size)
     n_data = cf_batch_sz * len_dl_train

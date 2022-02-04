@@ -191,9 +191,11 @@ def main_worker(gpu, ngpus_per_node, args):
 
         if args.distributed:
             train_sampler.set_epoch(epoch)
-            cf_train_sampler.set_epoch(epoch)
+            if cf_train_sampler:
+                cf_train_sampler.set_epoch(epoch)
 
-        cf_train_loader.dataset.resample()
+        if cf_train_loader:
+            cf_train_loader.dataset.resample()
         adjust_learning_rate(optimizer, epoch, args)
 
         # train for one epoch
@@ -245,34 +247,47 @@ def train(train_loader, cf_train_loader, model, criterion, optimizer, epoch, arg
     batch_time = AverageMeter('Time', ':6.3f')
     data_time = AverageMeter('Data', ':6.3f')
     losses = AverageMeter('Loss', ':.4e')
-    cf_losses = AverageMeter('CF_Loss', ':.4e')
     top1_real = AverageMeter('Real Acc@1', ':6.2f')
     top5_real = AverageMeter('Real Acc@5', ':6.2f')
-    top1_shape = AverageMeter('Shape Acc@1', ':6.2f')
-    top5_shape = AverageMeter('Shape Acc@5', ':6.2f')
-    top1_texture = AverageMeter('Texture Acc@1', ':6.2f')
-    top5_texture = AverageMeter('Texture Acc@5', ':6.2f')
-    top1_bg = AverageMeter('Bg Acc@1', ':6.2f')
-    top5_bg = AverageMeter('Bg Acc@5', ':6.2f')
-    progress = ProgressMeter(len(train_loader),
-                             [batch_time, data_time, losses,
-                              top1_real, top5_real, top1_shape, top5_shape,
-                              top1_texture, top5_texture, top1_bg, top5_bg],
-                             prefix=f"Epoch: [{epoch}]")
+    if cf_train_loader is None:
+        progress = ProgressMeter(len(train_loader), [batch_time, data_time, losses, top1_real, top5_real],
+                                 prefix=f"Epoch: [{epoch}]")
+    else:
+        cf_losses = AverageMeter('CF_Loss', ':.4e')
+        top1_shape = AverageMeter('Shape Acc@1', ':6.2f')
+        top5_shape = AverageMeter('Shape Acc@5', ':6.2f')
+        top1_texture = AverageMeter('Texture Acc@1', ':6.2f')
+        top5_texture = AverageMeter('Texture Acc@5', ':6.2f')
+        top1_bg = AverageMeter('Bg Acc@1', ':6.2f')
+        top5_bg = AverageMeter('Bg Acc@5', ':6.2f')
+        progress = ProgressMeter(len(train_loader),
+                                [batch_time, data_time, losses,
+                                top1_real, top5_real, top1_shape, top5_shape,
+                                top1_texture, top5_texture, top1_bg, top5_bg],
+                                prefix=f"Epoch: [{epoch}]")
 
 
     # switch to train mode
     model.train()
     model.apply(set_bn_eval)
 
+    data_iter = train_loader
+    if cf_train_loader is not None:
+        data_iter = zip(data_iter, cf_train_loader)
+
     end = time.time()
-    for i, (data, data_cf) in enumerate(zip(train_loader, cf_train_loader)):
+    for i, data in enumerate(data_iter):
         # measure data loading time
         data_time.update(time.time() - end)
 
+        data_cf = None
+        if cf_train_loader is not None:
+            data, data_cf = data
+
         if args.gpu is not None or torch.cuda.is_available():
             data = {k: v.cuda(args.gpu, non_blocking=True) for k, v in data.items()}
-            data_cf = {k: v.cuda(args.gpu, non_blocking=True) for k, v in data_cf.items()}
+            if data_cf:
+                data_cf = {k: v.cuda(args.gpu, non_blocking=True) for k, v in data_cf.items()}
 
         # compute output
         out = model(data['ims'])
@@ -281,31 +296,33 @@ def train(train_loader, cf_train_loader, model, criterion, optimizer, epoch, arg
         # compute gradient
         loss.backward()
 
-        # compute output for counterfactuals
-        out_cf = model(data_cf['ims'])
-        loss_cf = criterion(out_cf['shape_preds'], data_cf['shape_labels'])
-        loss_cf += criterion(out_cf['texture_preds'], data_cf['texture_labels'])
-        loss_cf += criterion(out_cf['bg_preds'], data_cf['bg_labels'])
+        if data_cf:
+            # compute output for counterfactuals
+            out_cf = model(data_cf['ims'])
+            loss_cf = criterion(out_cf['shape_preds'], data_cf['shape_labels'])
+            loss_cf += criterion(out_cf['texture_preds'], data_cf['texture_labels'])
+            loss_cf += criterion(out_cf['bg_preds'], data_cf['bg_labels'])
 
-        # compute gradient
-        loss_cf.backward()
+            # compute gradient
+            loss_cf.backward()
 
         # measure accuracy and record loss
         sz = len(data['ims'])
         acc1, acc5 = accuracy(out['avg_preds'], data['labels'], topk=(1, 5))
         losses.update(loss.item(), data['ims'].size(0))
-        cf_losses.update(loss_cf.item(), data['ims'].size(0))
         top1_real.update(acc1[0], sz)
         top5_real.update(acc5[0], sz)
-        acc1, acc5 = accuracy(out_cf['shape_preds'], data_cf['shape_labels'], topk=(1, 5))
-        top1_shape.update(acc1[0], sz)
-        top5_shape.update(acc5[0], sz)
-        acc1, acc5 = accuracy(out_cf['texture_preds'], data_cf['texture_labels'], topk=(1, 5))
-        top1_texture.update(acc1[0], sz)
-        top5_texture.update(acc5[0], sz)
-        acc1, acc5 = accuracy(out_cf['bg_preds'], data_cf['bg_labels'], topk=(1, 5))
-        top1_bg.update(acc1[0], sz)
-        top5_bg.update(acc5[0], sz)
+        if data_cf:
+            cf_losses.update(loss_cf.item(), data['ims'].size(0))
+            acc1, acc5 = accuracy(out_cf['shape_preds'], data_cf['shape_labels'], topk=(1, 5))
+            top1_shape.update(acc1[0], sz)
+            top5_shape.update(acc5[0], sz)
+            acc1, acc5 = accuracy(out_cf['texture_preds'], data_cf['texture_labels'], topk=(1, 5))
+            top1_texture.update(acc1[0], sz)
+            top5_texture.update(acc5[0], sz)
+            acc1, acc5 = accuracy(out_cf['bg_preds'], data_cf['bg_labels'], topk=(1, 5))
+            top1_bg.update(acc1[0], sz)
+            top5_bg.update(acc5[0], sz)
 
         # Step
         optimizer.step()
@@ -322,10 +339,12 @@ def train(train_loader, cf_train_loader, model, criterion, optimizer, epoch, arg
 
 def validate(model, val_loader, cf_val_loader, dl_shape_bias, dls_in9, args):
     real_accs = validate_imagenet(val_loader, model, args)
-    cf_accs = validate_counterfactual(cf_val_loader, model, args)
     shapes_biases = validate_shape_bias(model, dl_shape_bias)
     in_9_accs = validate_in_9(dls_in9, model)
-    val_res = {**real_accs, **cf_accs, **shapes_biases, **in_9_accs}
+    val_res = {**real_accs, **shapes_biases, **in_9_accs}
+    if cf_val_loader is not None:
+        cf_accs = validate_counterfactual(cf_val_loader, model, args)
+        val_res = {**cf_accs, **val_res}
 
     # Sync up
     if args.multiprocessing_distributed:
@@ -338,8 +357,11 @@ def validate(model, val_loader, cf_val_loader, dl_shape_bias, dls_in9, args):
         metrics = val_res
 
     # This was missing from the code. Is the sum correct?
-    metrics['acc1/0_overall'] = metrics['acc1/1_real'] + metrics['acc1/2_shape'] \
-                                +  metrics['acc1/3_texture'] + metrics['acc1/4_bg']
+    metrics['acc1/0_overall'] = metrics['acc1/1_real']
+    if cf_val_loader is not None:
+        metrics['acc1/0_overall'] += metrics['acc1/2_shape'] \
+                                     +  metrics['acc1/3_texture'] + metrics['acc1/4_bg']
+                                     
     return metrics
 
 

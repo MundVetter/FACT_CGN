@@ -38,6 +38,37 @@ def get_all_patches(ims, patch_sz=[10, 10], pad=True):
 
     return patch_batch
 
+def fill_image(paint, prob_map, min_fill=0.95):
+    paint_x, paint_y = paint.shape[-2:]
+    paint_xy = paint_x * paint_y
+    total_prob_map = (prob_map.squeeze() > 0.5)
+    content_loc = total_prob_map.nonzero()
+    content = paint[:,content_loc[:,0], content_loc[:,1]].detach().clone()
+    canvas = paint.detach().clone()
+
+    prob_map_size = torch.sum(total_prob_map)
+    # Impossible to fill.
+    if prob_map_size == 0:
+        return paint
+
+    # Copy paste content to a random empty position. Till fill is met.
+    while True:
+        empty_loc = (total_prob_map == 0).nonzero()
+        if 1 - (len(empty_loc) / paint_xy) > min_fill:
+            break
+
+        loc = empty_loc[torch.randint(len(empty_loc), (1,))]
+        center_loc = content_loc[torch.randint(len(content_loc), (1,))]
+        copy_content_loc = (content_loc + (loc - center_loc).squeeze()) % paint_x
+        # Canvas overshooting can't hurt. It should wrap around the other side.
+        canvas[:,copy_content_loc[:,0],copy_content_loc[:,1]] = content
+        total_prob_map[copy_content_loc[:,0],copy_content_loc[:,1]] = 1
+    
+    # The original content can overlap all copies. But this might increase mask size.
+    # canvas[:,content_loc[:,0],content_loc[:,1]] = content
+
+    return canvas
+
 def get_sampled_patches(prob_maps, paint, patch_sz=[30, 30], sample_sz=500, n_up=None):
     paint_shape = paint.shape[-2:]
     prob_maps = F.interpolate(prob_maps, (128, 128), mode='bicubic', align_corners=False)
@@ -196,17 +227,22 @@ class PerceptualLoss(nn.Module):
         return self.model(x_rec, x)
 
 class PercLossText(nn.Module):
-    def __init__(self, style_wgts, patch_sz=[15, 15], im_sz=256, sample_sz=100, n_up=6):
+    def __init__(self, style_wgts, patch_sz=[15, 15], im_sz=256, sample_sz=100, n_up=6, fill_rand=False):
         super(PercLossText, self).__init__()
         self.loss = PerceptualLoss(style_wgts=style_wgts)
         self.patch_sz = patch_sz
         self.sample_sz = sample_sz
         self.n_up = n_up
+        self.fill_rand = fill_rand
 
     def forward(self, ims, mask, paint):
         ims, mask = ims.detach(), mask.detach()
-        paint_temp = get_sampled_patches(mask, ims, self.patch_sz, self.sample_sz, n_up=self.n_up)
-        return self.loss(paint, paint_temp.detach())
+        if self.fill_rand:
+            paint_temp = torch.cat([fill_image(im, m)[None] for im, m in zip(ims, mask)])
+        else:
+            paint_temp = get_sampled_patches(mask, ims, self.patch_sz, self.sample_sz, n_up=self.n_up)
+
+        return self.loss(paint, paint_temp.detach()), paint_temp
 
 # mask losses
 
@@ -225,7 +261,7 @@ class BinaryLoss(nn.Module):
 
 class MaskLoss(nn.Module):
 
-    def __init__(self, loss_weight, interval=[0.1, 0.9]):
+    def __init__(self, loss_weight, interval=[0.03, 0.9]):
         super(MaskLoss, self).__init__()
         self.loss_weight = loss_weight
         self.interval = interval

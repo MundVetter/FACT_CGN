@@ -22,7 +22,7 @@ from utils import Optimizers
 def save_sample_sheet(cgn, u_fixed, sample_path, ep_str):
     cgn.eval()
     dev = u_fixed.to(cgn.get_device())
-    ys = [15, 251, 330, 382, 385, 483, 559, 751, 938, 947, 999]
+    ys = [15, 251, 330, 382, 385, 483, 559, 751, 938, 947, 999, 779, 836, 1, 21]
 
     to_save = []
     with torch.no_grad():
@@ -55,7 +55,7 @@ def save_sample_single(cgn, u_fixed, sample_path, ep_str):
     cgn.eval()
     dev = u_fixed.to(cgn.get_device())
 
-    ys = [15, 251, 330, 382, 385, 483, 559, 751, 938, 947, 999]
+    ys = [15, 251, 330, 382, 385, 483, 559, 751, 938, 947, 999, 779, 836, 1, 21]
     with torch.no_grad():
         for y in ys:
             # generate
@@ -170,7 +170,7 @@ def main(cfg):
     L_perc = PerceptualLoss(style_wgts=cfg.LAMBDA.PERC)
     L_binary = BinaryLoss(loss_weight=cfg.LAMBDA.BINARY)
     L_mask = MaskLoss(loss_weight=cfg.LAMBDA.MASK)
-    L_text = PercLossText(style_wgts=cfg.LAMBDA.TEXT)
+    L_text = PercLossText(style_wgts=cfg.LAMBDA.TEXT, fill_rand=cfg.FILL_RAND)
     L_bg = BackgroundLoss(loss_weight=cfg.LAMBDA.BG)
     losses = (L_l1, L_perc, L_binary, L_mask, L_text, L_bg)
 
@@ -193,6 +193,8 @@ def merge_args_and_cfg(args, cfg):
     cfg.TRAIN.EPISODES = args.episodes
     cfg.TRAIN.BATCH_SZ = args.batch_sz
     cfg.TRAIN.BATCH_ACC = args.batch_acc
+
+    cfg.FILL_RAND = args.fill_textloss
 
     cfg.MODEL.TRUNCATION = args.truncation
     return cfg
@@ -219,6 +221,8 @@ if __name__ == "__main__":
                         help='Save samples/weights every n iter')
     parser.add_argument('--log_losses', default=False, action='store_true',
                         help='Print out losses')
+    parser.add_argument('--fill_textloss', default=False, action='store_true',
+                        help='Compare the BigGan output with an image randomly filled with the texture mask.')
     args = parser.parse_args()
 
     cfg = get_cfg_defaults()
