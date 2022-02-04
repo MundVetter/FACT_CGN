@@ -48,10 +48,9 @@ class ColoredMNIST(Dataset):
 
 class DoubleColoredMNIST(Dataset):
 
-    def __init__(self, train=True, random = True):
+    def __init__(self, train=True):
         self.train = train
         self.mnist_sz = 32
-        self.random = random
 
         # get mnist
         mnist = datasets.MNIST('mnists/data', train=True, download=True)
@@ -83,20 +82,14 @@ class DoubleColoredMNIST(Dataset):
             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
         ])
 
-    def __getitem__(self, idx, i_ours = -1):
+    def __getitem__(self, idx):
         i = self.labels[idx] if self.train else np.random.randint(10)
-        if i_ours > -1:
-            i = i_ours
         back_color = self.background_colors[i].clone()
-        if self.random:
-            back_color += torch.normal(0, 0.01, (3, 1, 1))
+        back_color += torch.normal(0, 0.01, (3, 1, 1))
 
         i = self.labels[idx] if self.train else np.random.randint(10)
-        if i_ours > -1:
-            i = i_ours
         obj_color = self.object_colors[i].clone()
-        if self.random:
-            obj_color += torch.normal(0, 0.01, (3, 1, 1))
+        obj_color += torch.normal(0, 0.01, (3, 1, 1))
 
         # get digit
         im_digit = (self.ims_digit[idx]/255.).to(torch.float32)
@@ -182,6 +175,7 @@ def get_dataloaders(dataset, batch_size, workers):
         raise TypeError(f"Unknown dataset: {dataset}")
 
     ds_train = MNIST(train=True)
+    # ZET LATER WEER OP FALSE!
     ds_test = MNIST(train=False)
 
     dl_train = DataLoader(ds_train, batch_size=batch_size,
@@ -197,7 +191,7 @@ TENSOR_DATASETS = ['colored_MNIST', 'colored_MNIST_counterfactual',
 
 def get_tensor_dataloaders(dataset, batch_size=64, original=False):
     assert dataset in TENSOR_DATASETS, f"Unknown datasets {dataset}"
-
+    print("original", original)
     if 'counterfactual' in dataset:
         if original:
             tensor = torch.load(f'mnists/data/{dataset}.pth')
